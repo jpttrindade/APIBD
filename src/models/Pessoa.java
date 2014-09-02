@@ -9,6 +9,6 @@ public class Pessoa {
 	int age;
 	String name;
 	
+	ManyToMany<Carro> carros;
 	
-
 }
