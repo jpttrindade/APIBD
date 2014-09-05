@@ -6,18 +6,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
-public class ManyToMany<T> implements List<T>{
-	
+public class OneToMany<T> implements List<T> {
 	private ArrayList<T> list;
 	
-	public ManyToMany(ArrayList<T> list){
+	public OneToMany(ArrayList<T> list){
 		this.list = list;
 	}
 	
-	public ManyToMany(){
+	public OneToMany(){
 		this.list = new ArrayList<>();
 	}
 
+	
 	@Override
 	public int size() {
 		return list.size();
@@ -136,10 +136,15 @@ public class ManyToMany<T> implements List<T>{
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder("\n");
+		
+		int i = 1;
 		for(T t : list){
-			sb.append(t+" ");
+			sb.append(t.getClass().getSimpleName()+" #"+i+":\n");
+			sb.append(t+"\n\n");
+			i++;
 		}
+		sb.append("\n");
 		return sb.toString();
 	}
 }

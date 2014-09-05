@@ -1,36 +1,34 @@
 package models;
 
-import annotation.PrimaryKey;
 
-public class Carro extends Model<Carro>{
-	@PrimaryKey
-	String chassi;
-	
-	@PrimaryKey
-	String modelo;
+
+public class Carro implements Model<Carro>{
+	PrimaryKey<String> chassi;
+	PrimaryKey<String> modelo;
 	
 	int ano;
 	String cor;
 	
-	ManyToMany<Pessoa> donos;
-	
+	private boolean hasChange;
 
-	public Carro(String chassi, String modelo, int ano, String cor) {
+
+	public Carro(String chassi2, String modelo2, int ano2, String cor2) {
 		super();
-		this.chassi = chassi;
-		this.modelo = modelo;
-		this.ano = ano;
-		this.cor = cor;
+		this.chassi = new PrimaryKey<String>(chassi2);
+		this.modelo = new PrimaryKey<String>(modelo2);
+		this.ano = ano2;
+		this.cor = cor2;
+		this.hasChange = false;
 	}
 
 
 	public String getChassi() {
-		return chassi;
+		return chassi.getPk();
 	}
 
 
 	public String getModelo() {
-		return modelo;
+		return modelo.getPk();
 	}
 
 
@@ -42,13 +40,37 @@ public class Carro extends Model<Carro>{
 	public String getCor() {
 		return cor;
 	}
-
-
-	public ManyToMany<Pessoa> getDonos() {
-		return donos;
+	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return "Chassi/Modelo: "+ chassi + "/"+modelo + 
+				"\nAno:"+ ano+ 
+				"\nCor:" +cor;
 	}
 
-	
 
+	@Override
+	public boolean save() {
+		return false;
+	}
+
+
+	@Override
+	public boolean delete() {
+		return false;
+	}
+
+
+	@Override
+	public boolean hasChange() {
+		return hasChange;
+	}
+
+
+	@Override
+	public PrimaryKey<?>[] getPrimaryKies() {
+		return new PrimaryKey<?>[]{chassi, modelo};
+	}
 	
 }
