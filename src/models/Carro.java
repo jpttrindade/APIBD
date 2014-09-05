@@ -1,10 +1,19 @@
 package models;
 
+import annotation.PrimaryKey;
+
 
 
 public class Carro implements Model<Carro>{
-	PrimaryKey<String> chassi;
+	
+/*	PrimaryKey<String> chassi;
 	PrimaryKey<String> modelo;
+*/	
+	@PrimaryKey
+	String chassi;
+	
+	@PrimaryKey
+	String modelo;
 	
 	int ano;
 	String cor;
@@ -14,8 +23,10 @@ public class Carro implements Model<Carro>{
 
 	public Carro(String chassi2, String modelo2, int ano2, String cor2) {
 		super();
-		this.chassi = new PrimaryKey<String>(chassi2);
-		this.modelo = new PrimaryKey<String>(modelo2);
+		//this.chassi = new PrimaryKey<String>(chassi2);
+		//this.modelo = new PrimaryKey<String>(modelo2);
+		this.chassi = chassi2;
+		this.modelo =modelo2;
 		this.ano = ano2;
 		this.cor = cor2;
 		this.hasChange = false;
@@ -23,12 +34,14 @@ public class Carro implements Model<Carro>{
 
 
 	public String getChassi() {
-		return chassi.getPk();
+		//return chassi.getPk();
+		return chassi;
 	}
 
 
 	public String getModelo() {
-		return modelo.getPk();
+		//return modelo.getPk();
+		return modelo;
 	}
 
 
@@ -68,9 +81,9 @@ public class Carro implements Model<Carro>{
 	}
 
 
-	@Override
+/*	@Override
 	public PrimaryKey<?>[] getPrimaryKies() {
 		return new PrimaryKey<?>[]{chassi, modelo};
 	}
-	
+	*/
 }

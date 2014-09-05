@@ -6,14 +6,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
-public class OneToMany<T> implements List<T> {
+public class One2Many<T> implements List<T> {
 	private ArrayList<T> list;
 	
-	public OneToMany(ArrayList<T> list){
+	public One2Many(ArrayList<T> list){
 		this.list = list;
 	}
 	
-	public OneToMany(){
+	public One2Many(){
 		this.list = new ArrayList<>();
 	}
 

@@ -15,13 +15,7 @@ public class Main {
 		ModelsManagerConcret modelsManager = new ModelsManagerConcret();
 		
 		modelsManager.init();
-		
-		
-		for(Class<?> c : modelsManager.classes){
-			System.out.println(modelsManager.getColumns(c));
-			modelsManager.getSettings(c);
-		}
-		
+	
 		ArrayList<Carro> carros = new ArrayList<>();
 		
 		for(int i = 0; i<10; i++){
