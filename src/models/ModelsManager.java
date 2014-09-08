@@ -6,6 +6,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import annotation.OneToMany;
 
@@ -17,9 +18,11 @@ public abstract class ModelsManager {
 	public static final String One2Many = "OneToMany";
 	public static final String PK = "PrimaryKey";
 
+	private static final String SQLIgnore = "SQLIgnore";
 
-	HashMap<String, ArrayList<String>> settingsFK = new HashMap<>();
-	HashMap<String, StringBuilder> settingsPK = new HashMap<>();
+
+	HashMap<String, ArrayList<ArrayList<String>>> settingsFK = new HashMap<>();
+	HashMap<String, ArrayList<String>> settingsPK = new HashMap<>();
 
 	HashMap<Class<?>, ArrayList<String[]>> columns = new HashMap<>();
 
@@ -39,7 +42,7 @@ public abstract class ModelsManager {
 			sb.append("CREATE TABLE ")
 			.append(c.getSimpleName())
 			.append("(\n");
-			
+
 			for(String[] col : columns.get(c)){
 				sb.append(col[0])
 				.append(" ")
@@ -48,17 +51,47 @@ public abstract class ModelsManager {
 				.append("\n");
 			}
 			sb.append("PRIMARY KEY")
-			.append(settingsPK.get(c.getCanonicalName()));
-			ArrayList<String> fks = getForeignKeys(c);
+			.append(getPrimaryKeyString(settingsPK.get(c.getCanonicalName())));
 
-			for(String fk : fks){
-				sb.append(fk);
+
+
+			ArrayList<ArrayList<String>> fks = getForeignKeys(c);
+
+			for(ArrayList<String> fk : fks){
+				sb.append(getForeignKeyString(fk));
 			}
 			sb.append(");\n");
 		}
 
 		return sb.toString();
 
+	}
+
+
+	private String getForeignKeyString(ArrayList<String> fk) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(",\n")
+		.append("FOREIGN KEY (");
+		// inclui os nomes das foreign keys
+		String classe = fk.get(0);
+
+		for(int i = 1; i<fk.size(); i++){
+			sb.append(classe.toLowerCase())
+			.append("_")
+			.append(fk.get(i));
+			if(i!=fk.size()-1){
+				sb.append(",");
+			}
+
+		}
+		// -----
+		sb.append(") REFERENCES ")
+		.append(classe)
+		.append(" ")
+		.append(getPrimaryKeyString(fk.subList(1, fk.size())))
+		.append("\n");
+
+		return sb.toString();
 	}
 
 
@@ -84,77 +117,85 @@ public abstract class ModelsManager {
 		return classe;
 	}
 
-	public String getSettings(Class<?> c){
-		StringBuilder sb = getPrimaryKeys(c.getDeclaredFields());
-		settingsPK.put(c.getCanonicalName(), sb);
+	public void getSettings(Class<?> c){
+		ArrayList<String> pks = getPrimaryKeys(c.getDeclaredFields());
+		settingsPK.put(c.getCanonicalName(), pks);
 
 		///////////////////////////0000000000000000////////////////////
-		sb = new StringBuilder();
 
-		for(Field f : c.getDeclaredFields()){
+		ArrayList<String> fks = getForeignKey(c);
+		ArrayList<Class<?>> classes = getFKClasses(c.getDeclaredFields());
+		ArrayList<ArrayList<String>> fkSett = null;
+
+		for(Class<?> cl : classes){
+			fkSett = settingsFK.get(cl);
+			if(fkSett == null){
+				fkSett = new ArrayList<>();
+			}
+
+			fkSett.add(fks);
+			settingsFK.put(cl.getCanonicalName(), fkSett);
+			ArrayList<String[]> cols = getColumns(cl);
+			String classe = fks.get(0);
+			for(int i = 1; i< fks.size(); i++){
+				cols.add(new String[]{classe.toLowerCase()+"_"+fks.get(i), getSQLType(c, fks.get(i))});
+			}
+		}
+
+	}
+
+
+	private ArrayList<Class<?>> getFKClasses(Field[] declaredFields) {
+		ArrayList<Class<?>> classes = new ArrayList<>();
+		Class<?> classe = null;
+		for(Field f : declaredFields){
 			Annotation[] an = f.getDeclaredAnnotations();
 			for(Annotation a : an){
 				if(a.annotationType().getSimpleName().equals("OneToMany")){
-					sb.append(",\n")
-					.append("FOREIGN KEY (");
-					sb.append("id_")
-					.append(c.getSimpleName().toLowerCase());
-					sb.append(") REFERENCES ")
-					.append(c.getSimpleName())
-					.append(" ")
-					.append(settingsPK.get(c.getCanonicalName()).toString())
-					.append("\n");
 
-					Class<?> classe = getClassBySimpleName(((OneToMany)a).classe());
-
-					/*	StringBuilder pktemp = settingsPK.get(classe.getCanonicalName());
-
-					if(pktemp == null){
-						pktemp = getPrimaryKeys(classe.getDeclaredFields());
-					}
-					 */
-					ArrayList<String> fkSett = settingsFK.get(classe);
-					if(fkSett == null){
-						fkSett = new ArrayList<>();
-					}
-					fkSett.add(sb.toString());
-					settingsFK.put(classe.getCanonicalName(), fkSett);
-					ArrayList<String[]> cols = getColumns(classe);				
-					cols.add(new String[]{"id_"+c.getSimpleName().toLowerCase(), getPrimaryKeysType(c.getDeclaredFields()).toString()});
-					columns.put(classe, cols);
-					
+					classe = getClassBySimpleName(((OneToMany)a).classe());
+					classes.add(classe);
 				}
 			}
-
-
-
 		}
-		return sb.toString();
+		return classes;
 	}
 
-	
 
-	private ArrayList<String> getForeignKeys(Class<?> c) {
-		ArrayList<String> fks = settingsFK.get(c.getCanonicalName());
+
+
+	private String getSQLType(Class<?> cl, String fieldName) {
+		String type = "TEXT";
+		for(Field f : cl.getDeclaredFields()){
+			if(f.getName().equals(fieldName)){
+				type = convertType(f);
+				break;
+			}
+		}
+		return type;
+	}
+
+
+	private ArrayList<String> getForeignKey(Class<?> c) {
+
+		ArrayList<String> fks = new ArrayList<String>();
+		fks.add(c.getSimpleName());
+		for(String s : getPrimaryKeys(c.getDeclaredFields())){
+			fks.add(s);
+		}
+		return fks;
+	}
+
+
+	private ArrayList<ArrayList<String>> getForeignKeys(Class<?> c) {
+		ArrayList<ArrayList<String>> fks = settingsFK.get(c.getCanonicalName());
 		if(fks == null){
 			fks = new ArrayList<>();
 		}	
 		return fks;
 	}
 
-
-	private StringBuilder getPrimaryKeys(Field[] fds) {
-		ArrayList<String> pks = new ArrayList<>();
-
-		for(Field f : fds){
-			Annotation[] an = f.getDeclaredAnnotations();
-
-			for(Annotation a : an){
-				if(a.annotationType().getSimpleName().equals("PrimaryKey")){
-					pks.add(f.getName());
-				}
-			}
-		}
+	private StringBuilder getPrimaryKeyString(List<String> pks){
 		StringBuilder sb = new StringBuilder();
 		sb.append("(");
 		for(int i = 0; i<pks.size(); i++){
@@ -167,40 +208,39 @@ public abstract class ModelsManager {
 		sb.append(")");
 		return sb;
 	}
-	
-	// tem q ver aqui ooohhh
-	private String getPrimaryKeysType(Field[] declaredFields) {
-		// TODO Auto-generated method stub
-		return "TEXT";
-	}
 
+	private ArrayList<String> getPrimaryKeys(Field[] fds) {
+		ArrayList<String> pks = new ArrayList<>();
+
+		for(Field f : fds){
+			Annotation[] an = f.getDeclaredAnnotations();
+
+			for(Annotation a : an){
+				if(a.annotationType().getSimpleName().equals("PrimaryKey")){
+					pks.add(f.getName());
+				}
+			}
+		}
+
+		return pks;
+	}
 
 	public ArrayList<String[]> getColumns(Class<?> c){
 		ArrayList<String[]> cols = columns.get(c);
 		if(cols == null){
 			cols = new ArrayList<>();
 
-			String type = "";
-
 			for(Field f : c.getDeclaredFields()){
-				type = f.getType().getSimpleName();
-				switch (type) {
-				/*			case PK:
-				cols.append(f.getName()).append(" ")
-				.append(convertType(f))
-				.append(" ")
-				.append("Primary Key").append(", ");
-				break;*/
-				case Many2Many:
-
-					break;
-
-				case One2Many:
-
-					break;
-				default:
+				Annotation[] an = f.getDeclaredAnnotations();
+				if(an.length > 0){
+					for(Annotation a : an){
+						if(!a.annotationType().getSimpleName().equals(SQLIgnore)){
+							cols.add(new String[]{f.getName(), convertType(f)});
+							break;
+						}
+					}
+				}else {
 					cols.add(new String[]{f.getName(), convertType(f)});
-					break;
 				}
 			}
 			columns.put(c, cols);

@@ -1,17 +1,18 @@
-package models;
+package teste;
 
 import java.util.ArrayList;
 import java.util.Date;
 
+import models.Model;
 import annotation.OneToMany;
 import annotation.PrimaryKey;
 
 public class Pessoa implements Model<Pessoa> {
 	
 	@PrimaryKey
-	String cpf;
-
-	int age;
+	private int cpf;
+	@PrimaryKey
+	private int age;
 	
 	String name;
 	

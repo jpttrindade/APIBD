@@ -1,6 +1,8 @@
-package models;
+package teste;
 
+import models.Model;
 import annotation.PrimaryKey;
+import annotation.SQLIgnore;
 
 
 
@@ -18,6 +20,7 @@ public class Carro implements Model<Carro>{
 	int ano;
 	String cor;
 	
+	@SQLIgnore
 	private boolean hasChange;
 
 

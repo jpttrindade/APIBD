@@ -1,8 +1,8 @@
 package main;
 
-import models.Carro;
+import teste.Carro;
+import teste.Pessoa;
 import models.ModelsManager;
-import models.Pessoa;
 
 public class ModelsManagerConcret extends ModelsManager{
 

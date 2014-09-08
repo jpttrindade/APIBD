@@ -1,10 +1,8 @@
 package main;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
-
-import models.Carro;
-import models.Pessoa;
+import teste.Carro;
+import teste.Pessoa;
 
 public class Main {
 
