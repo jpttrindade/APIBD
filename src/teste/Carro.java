@@ -7,10 +7,7 @@ import annotation.SQLIgnore;
 
 
 public class Carro implements Model<Carro>{
-	
-/*	PrimaryKey<String> chassi;
-	PrimaryKey<String> modelo;
-*/	
+
 	@PrimaryKey
 	String chassi;
 	

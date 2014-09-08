@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import models.Model;
+import annotation.ManyToMany;
 import annotation.OneToMany;
 import annotation.PrimaryKey;
 
@@ -16,7 +17,7 @@ public class Pessoa implements Model<Pessoa> {
 	
 	String name;
 	
-	@OneToMany(classe= "Carro")
+	@ManyToMany(classe= "Carro")
 	ArrayList<Carro> carros;
 
 	Date dataNascimento;

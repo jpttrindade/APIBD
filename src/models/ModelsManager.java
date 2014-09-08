@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.omg.CORBA.OMGVMCID;
+
 import annotation.OneToMany;
 
 
@@ -102,9 +104,77 @@ public abstract class ModelsManager {
 			classes.add(c);
 			getSettings(c);
 			getColumns(c);
+			
+			////////////////// |testes akiii| //////////////////
+			
+			Annotation[] an  = null;
+			ArrayList<Field> pks = new ArrayList<>();
+			ArrayList<Field> otoM = new ArrayList<>();
+			ArrayList<Field> mtoM = new ArrayList<>();
+			
+			for(Field f : c.getDeclaredFields()){
+				an = f.getDeclaredAnnotations();
+				if(an.length > 0){
+					for(Annotation a : an){
+						switch (a.annotationType().getSimpleName()) {
+						case One2Many:
+							otoM.add(f);
+							break;
+						case PK:
+							addPK(c, f);
+							//pks.add(f);
+							break;							
+						case Many2Many:
+							mtoM.add(f);
+							break;
+						case SQLIgnore:
+							break;
+						default:
+							break;
+						}
+					}
+				}else{
+					addColumn(c, f);
+				}
+			}
+			
+			for(Field f : otoM){
+//				addFK(c, f, a);
+			}
+			
+			////////////////// |_________| //////////////////
+
 
 		}
 	}
+
+	private void addFK(Class<?> c, Field f, Annotation a) {
+		//Class<?> classe = getClassBySimpleName((One2Many))
+	}
+
+
+	private void addPK(Class<?> c, Field f) {
+		ArrayList<String> pks = settingsPK.get(c);
+		if(pks == null){
+			pks = new ArrayList<>();
+		}
+		
+		pks.add(f.getName());
+		
+	}
+
+
+	private void addColumn(Class<?> c, Field f) {
+		ArrayList<String[]> cols = columns.get(c);
+		
+		if(cols == null){
+			cols = new ArrayList<>();
+		}
+		
+		cols.add(new String[]{f.getName(), convertType(f)});
+		columns.put(c, cols);
+	}
+
 
 	public Class<?> getClassBySimpleName(String simpleName){
 		Class<?> classe= null;
@@ -278,3 +348,4 @@ public abstract class ModelsManager {
 
 
 }
+
