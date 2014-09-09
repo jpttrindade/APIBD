@@ -17,8 +17,8 @@ public class Pessoa implements Model<Pessoa> {
 	
 	String name;
 	
-	@ManyToMany(classe= "Carro")
-	ArrayList<Carro> carros;
+	@OneToMany(classe= "Carro")
+	private ArrayList<Carro> carros;
 
 	Date dataNascimento;
 	
