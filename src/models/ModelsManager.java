@@ -10,6 +10,8 @@ import java.util.List;
 
 import org.omg.CORBA.OMGVMCID;
 
+import table.Attribute;
+import table.ForeignKey;
 import table.Table;
 import annotation.ManyToMany;
 import annotation.OneToMany;
@@ -27,7 +29,7 @@ public abstract class ModelsManager {
 
 	private static final String SQLIgnore = "SQLIgnore";
 	
-	ArrayList<Table> tables = new ArrayList<>();
+	HashMap<Class<?>, Table> tables = new HashMap<>();
 
 
 	
@@ -111,24 +113,40 @@ public abstract class ModelsManager {
 	protected abstract void initializeModels();
 
 	protected <T> void addClass(Class<?>... clas) {
+		Table tableA;
+		createTables(clas);
+		Attribute att;
+		String classeBName;
+		Class<?> classeB;
+		Table tableB;
+		Annotation[] annotations;
+		
 		for(Class<?> c : clas){
-			classes.add(c);
-
-			Annotation[] an  = null;
+			tableA = tables.get(c);			
+			
+			annotations = null;
 
 			for(Field f : c.getDeclaredFields()){
-				an = f.getDeclaredAnnotations();
-				if(an.length > 0){
-					for(Annotation a : an){
+				annotations = f.getDeclaredAnnotations();
+				if(annotations.length > 0){
+					for(Annotation a : annotations){
 						switch (a.annotationType().getSimpleName()) {
 						case One2Many:
-							addFK(c, f, a);
+							classeBName = ((OneToMany)a).classe();
+							classeB = getClassBySimpleName(classeBName);
+							tableB = tables.get(classeB);
+							addFK(tableB, tableA);
 							break;
 						case PK:
-							addPK(c, f);
+							//addPK(table, c, f);
+							System.out.println("primaryKey ---");
 							break;							
 						case Many2Many:
-							addTableManyToMany(c, a);
+							classeBName = ((OneToMany)a).classe();
+							classeB = getClassBySimpleName(classeBName);
+							tableB = tables.get(classeB);
+							addTableManyToMany(tableA, tableB);
+							
 							break;
 						case SQLIgnore:
 							break;
@@ -137,48 +155,78 @@ public abstract class ModelsManager {
 						}
 					}
 				}else{
-					addColumn(c, f, null);
+					//addColumn(c, f, null);
+					att = new Attribute(f.getName(), convertType(f)); 
+					tableA.addColumn(att);
+					
 				}
 			}
 		}
 	}
 
-	private void addTableManyToMany(Class<?> classA, Annotation a) {
-		Class<?> classB = getClassBySimpleName(((ManyToMany)a).classe());
-		String tableName = classA.getSimpleName()+"_"+classB.getSimpleName();
-		
-		
-		
+	private void createTables(Class<?>[] classes) {
+		Table table;
+		Attribute att;
+		for(Class<?> c : classes){
+			this.classes.add(c);
+			table = new Table(c.getSimpleName());
+			for(Field f: getPrimaryKeys(c)){
+				table.addPrimaryKey(new Attribute(f.getName(), convertType(f)));
+			}
+			tables.put(c, table);
+		}
 	}
 
 
-	private void addFK(Class<?> c, Field f, Annotation a) {
-		Class<?> classe = getClassBySimpleName(((OneToMany)a).classe());
-
-		ArrayList<Field> pks = getPrimaryKeys(c);
-
-		for(Field fd : pks){
-			addColumn(classe, fd, c);
-		}
-		ArrayList<ArrayList<String>> fks = settingsFK.get(classe);
-		if(fks == null){
-			fks = new ArrayList<>();
-		}
-		fks.add(getForeignKey(c));
-		settingsFK.put(classe, fks);
-
+	private void addTableManyToMany(Table tableA, Table tableB) {
+		String tableName = tableA.getName()+"_"+tableB.getName();
+		Table table = new Table(tableName);	
+		table.addForeignKeyPrimaryKey(tableA.getForeignKeySettings());
+		table.addForeignKeyPrimaryKey(tableB.getForeignKeySettings());	
+		//tables.put(key, value)
 	}
 
 
-	private void addPK(Class<?> c, Field f) {
-		ArrayList<Field> pks = settingsPK.get(c);
-		if(pks == null){
-			pks = new ArrayList<>();
-		}
+//	private void addFK(Table tableA, Class<?> classA, Field f, Annotation a) {
+///*		Class<?> classe = getClassBySimpleName(((OneToMany)a).classe());
+//
+//		ArrayList<Field> pks = getPrimaryKeys(c);
+//
+//		for(Field fd : pks){
+//			addColumn(classe, fd, c);
+//		}
+//		ArrayList<ArrayList<String>> fks = settingsFK.get(classe);
+//		if(fks == null){
+//			fks = new ArrayList<>();
+//		}
+//		fks.add(getForeignKey(c));
+//		settingsFK.put(classe, fks);*/
+//			
+//
+//	}
 
-		pks.add(f);
-		settingsPK.put(c, pks);
-		addColumn(c, f, null);
+	private void addFK(Table tableB, Table tableA) {
+		ForeignKey fk = new ForeignKey(tableA.getName(), tableA.getPrimarykeys());
+		tableB.addForeignKey(fk);
+	}
+
+
+
+
+	private void addPK(Table table, Class<?> c, Field f) {
+//		ArrayList<Field> pks = settingsPK.get(c);
+//		if(pks == null){
+//			pks = new ArrayList<>();
+//		}
+//
+//		pks.add(f);
+//		settingsPK.put(c, pks);
+//		addColumn(c, f, null);
+		String attName = f.getName();
+		String attType = convertType(f);
+		Attribute att = new Attribute(attName, attType);
+		table.addPrimaryKey(att);
+		
 	}
 
 
