@@ -13,6 +13,7 @@ public class Table {
 	public Table(String name){
 		this.name = name;
 		columns = new ArrayList<>();
+		primarykeys = new ArrayList<>();
 		foreignKeys = new ArrayList<>();
 	}
 
@@ -43,11 +44,10 @@ public class Table {
 	
 	public void addForeignKey(ForeignKey fk){
 		foreignKeys.add(fk);
-		String attName;
+		Attribute nAtt;
 		for(Attribute att : fk.getPrimarykeys()){
-			attName = fk.getClasseName()+"_"+att.getName();
-			att.setName(attName);
-			addColumn(att);
+			nAtt = new Attribute(fk.getClasseName().toLowerCase()+"_"+att.getName(), att.getType());
+			addColumn(nAtt);
 		}
 		
 	}
@@ -58,11 +58,10 @@ public class Table {
 	
 	public void addForeignKeyPrimaryKey(ForeignKey fk){
 		addForeignKey(fk);
-		String attName;
+		Attribute nAtt;
 		for(Attribute at : fk.primarykeys){
-			attName = fk.classeName+"_"+at.getName();
-			at.setName(attName);
-			primarykeys.add(at);
+			nAtt = new Attribute(fk.classeName.toLowerCase()+"_"+at.getName(), at.getType());
+			primarykeys.add(nAtt);
 		}
 		
 	}

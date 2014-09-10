@@ -12,12 +12,11 @@ public class Pessoa implements Model<Pessoa> {
 	
 	@PrimaryKey
 	private int cpf;
-	@PrimaryKey
 	private int age;
 	
 	String name;
 	
-	@OneToMany(classe= "Carro")
+	@ManyToMany(classe= "Carro")
 	private ArrayList<Carro> carros;
 
 	Date dataNascimento;

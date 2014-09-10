@@ -11,7 +11,6 @@ public class Carro implements Model<Carro>{
 	@PrimaryKey
 	String chassi;
 	
-	@PrimaryKey
 	String modelo;
 	
 	int ano;

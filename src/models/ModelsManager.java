@@ -7,46 +7,149 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-import org.omg.CORBA.OMGVMCID;
-
 import table.Attribute;
 import table.ForeignKey;
 import table.Table;
 import annotation.ManyToMany;
 import annotation.OneToMany;
-import annotation.PrimaryKey;
 
 
 public abstract class ModelsManager {
 	public ArrayList<Class<?>> classes = new ArrayList<Class<?>>();
 
-	
-	
+
+
 	public static final String Many2Many = "ManyToMany";
 	public static final String One2Many = "OneToMany";
 	public static final String PK = "PrimaryKey";
 
 	private static final String SQLIgnore = "SQLIgnore";
-	
-	HashMap<Class<?>, Table> tables = new HashMap<>();
+
+	HashMap<String, Table> tables = new HashMap<>();
 
 
-	
-	
-	HashMap<Class<?>, ArrayList<ArrayList<String>>> settingsFK = new HashMap<>();
-	HashMap<Class<?>, ArrayList<Field>> settingsPK = new HashMap<>();
 
-	HashMap<Class<?>, ArrayList<String[]>> columns = new HashMap<>();
-	
+
+	HashMap<String, ArrayList<ArrayList<String>>> settingsFK = new HashMap<>();
+	HashMap<String, ArrayList<Field>> settingsPK = new HashMap<>();
+
+	HashMap<String, ArrayList<String[]>> columns = new HashMap<>();
+
 	ArrayList<String> manyToManys = new ArrayList<>();
 
 	public void init(){
 		initializeModels();
-		String script = getScriptCreation();
+		//String script = getScriptCreation();
 
-		System.out.println(script);
+		//	System.out.println(script);
+		printTables();
+	}
 
+
+	private void printTables() {
+		StringBuilder sb;
+		for(Table t : tables.values()){
+			sb = new StringBuilder();
+			sb.append("CREATE TABLE ").append(t.getName()).append("(\n")
+			.append(printColumns(t.getColumns()))
+			.append(printPKS(t.getPrimarykeys()));
+			
+			if(t.getForeignKeys().size()>0){
+				sb.append(",\n")
+				.append(printFKS(t.getForeignKeys()));
+			}
+			sb.append("\n);\n");
+			System.out.println(sb.toString());
+		}
+	}
+
+
+	private String printFKS(ArrayList<ForeignKey> foreignkeys) {
+		StringBuilder sb = null;
+		StringBuilder sb_pks = null;
+		String table;
+		ArrayList<Attribute> pks;
+		if(foreignkeys.size()>0){
+			
+			for(int i = 0; i<foreignkeys.size()-1; i++){
+				 sb = new StringBuilder("FOREIGN KEY (");
+				 sb_pks = new StringBuilder();
+				table = foreignkeys.get(i).getClasseName();
+				pks = foreignkeys.get(i).getPrimarykeys();
+				for(int j = 0; j<pks.size()-1; j++){
+					sb_pks.append(pks.get(j).getName()).append(", ");
+					sb.append(table.toLowerCase()).append("_")
+					.append(pks.get(j).getName()).append(", ");
+				}
+				sb_pks.append(pks.get(pks.size()-1).getName()).append(")");
+
+				sb.append(table.toLowerCase()).append("_")
+				.append(pks.get(pks.size()-1).getName()).append(")");
+				sb.append(" REFERENCES ").append(table).append(" (").append(sb_pks).append("\n");
+
+			}
+			 sb.append("FOREIGN KEY (");
+			 sb_pks = new StringBuilder();
+			table = foreignkeys.get(foreignkeys.size()-1).getClasseName();
+			pks = foreignkeys.get(foreignkeys.size()-1).getPrimarykeys();
+			for(int j = 0; j<pks.size()-1; j++){
+				sb_pks.append(pks.get(j).getName()).append(", ");
+				sb.append(table.toLowerCase()).append("_")
+				.append(pks.get(j).getName()).append(", ");
+			}
+			sb_pks.append(pks.get(pks.size()-1).getName()).append(")");
+			sb.append(table.toLowerCase()).append("_")
+			.append(pks.get(pks.size()-1).getName()).append(")")
+			.append(" REFERENCES ").append(table).append(" (").append(sb_pks);
+
+
+		}
+		return sb.toString();
+
+		//		sb.append(",\n")
+		//		.append("FOREIGN KEY (");
+		//		// inclui os nomes das foreign keys
+		//		String classe = fk.get(0);
+		//
+		//		for(int i = 1; i<fk.size(); i++){
+		//			sb.append(classe.toLowerCase())
+		//			.append("_")
+		//			.append(fk.get(i));
+		//			if(i!=fk.size()-1){
+		//				sb.append(",");
+		//			}
+		//
+		//		}
+		//		// -----
+		//		sb.append(") REFERENCES ")
+		//		.append(classe)
+		//		.append(" ")
+		//		.append(getPrimaryKeyFromString(fk.subList(1, fk.size())))
+		//		.append("\n");
+	}
+
+
+	private String printPKS(ArrayList<Attribute> primarykeys) {
+		StringBuilder sb = new StringBuilder("PRIMARY KEY (");
+
+		for(int i = 0; i < primarykeys.size()-1; i++){
+			sb.append(primarykeys.get(i).getName())
+			.append(", ");
+		}
+		sb.append(primarykeys.get(primarykeys.size()-1).getName())
+		.append(")");
+
+		return sb.toString();
+	}
+
+
+	private String printColumns(ArrayList<Attribute> attributes) {
+		StringBuilder sb = new StringBuilder();
+		for(Attribute at : attributes){
+			sb.append(at.getName())
+			.append(" ").append(at.getType()).append(",").append("\n");
+		}
+		return sb.toString();
 	}
 
 
@@ -120,10 +223,10 @@ public abstract class ModelsManager {
 		Class<?> classeB;
 		Table tableB;
 		Annotation[] annotations;
-		
+
 		for(Class<?> c : clas){
-			tableA = tables.get(c);			
-			
+			tableA = tables.get(c.getCanonicalName());			
+
 			annotations = null;
 
 			for(Field f : c.getDeclaredFields()){
@@ -134,19 +237,18 @@ public abstract class ModelsManager {
 						case One2Many:
 							classeBName = ((OneToMany)a).classe();
 							classeB = getClassBySimpleName(classeBName);
-							tableB = tables.get(classeB);
+							tableB = tables.get(classeB.getCanonicalName());
 							addFK(tableB, tableA);
 							break;
 						case PK:
 							//addPK(table, c, f);
-							System.out.println("primaryKey ---");
+							//System.out.println("primaryKey ---");
 							break;							
 						case Many2Many:
-							classeBName = ((OneToMany)a).classe();
+							classeBName = ((ManyToMany)a).classe();
 							classeB = getClassBySimpleName(classeBName);
-							tableB = tables.get(classeB);
+							tableB = tables.get(classeB.getCanonicalName());
 							addTableManyToMany(tableA, tableB);
-							
 							break;
 						case SQLIgnore:
 							break;
@@ -158,7 +260,7 @@ public abstract class ModelsManager {
 					//addColumn(c, f, null);
 					att = new Attribute(f.getName(), convertType(f)); 
 					tableA.addColumn(att);
-					
+
 				}
 			}
 		}
@@ -173,7 +275,7 @@ public abstract class ModelsManager {
 			for(Field f: getPrimaryKeys(c)){
 				table.addPrimaryKey(new Attribute(f.getName(), convertType(f)));
 			}
-			tables.put(c, table);
+			tables.put(c.getCanonicalName(), table);
 		}
 	}
 
@@ -183,27 +285,28 @@ public abstract class ModelsManager {
 		Table table = new Table(tableName);	
 		table.addForeignKeyPrimaryKey(tableA.getForeignKeySettings());
 		table.addForeignKeyPrimaryKey(tableB.getForeignKeySettings());	
-		//tables.put(key, value)
+		manyToManys.add(tableName);
+		tables.put(tableName, table);
 	}
 
 
-//	private void addFK(Table tableA, Class<?> classA, Field f, Annotation a) {
-///*		Class<?> classe = getClassBySimpleName(((OneToMany)a).classe());
-//
-//		ArrayList<Field> pks = getPrimaryKeys(c);
-//
-//		for(Field fd : pks){
-//			addColumn(classe, fd, c);
-//		}
-//		ArrayList<ArrayList<String>> fks = settingsFK.get(classe);
-//		if(fks == null){
-//			fks = new ArrayList<>();
-//		}
-//		fks.add(getForeignKey(c));
-//		settingsFK.put(classe, fks);*/
-//			
-//
-//	}
+	//	private void addFK(Table tableA, Class<?> classA, Field f, Annotation a) {
+	///*		Class<?> classe = getClassBySimpleName(((OneToMany)a).classe());
+	//
+	//		ArrayList<Field> pks = getPrimaryKeys(c);
+	//
+	//		for(Field fd : pks){
+	//			addColumn(classe, fd, c);
+	//		}
+	//		ArrayList<ArrayList<String>> fks = settingsFK.get(classe);
+	//		if(fks == null){
+	//			fks = new ArrayList<>();
+	//		}
+	//		fks.add(getForeignKey(c));
+	//		settingsFK.put(classe, fks);*/
+	//			
+	//
+	//	}
 
 	private void addFK(Table tableB, Table tableA) {
 		ForeignKey fk = new ForeignKey(tableA.getName(), tableA.getPrimarykeys());
@@ -214,25 +317,25 @@ public abstract class ModelsManager {
 
 
 	private void addPK(Table table, Class<?> c, Field f) {
-//		ArrayList<Field> pks = settingsPK.get(c);
-//		if(pks == null){
-//			pks = new ArrayList<>();
-//		}
-//
-//		pks.add(f);
-//		settingsPK.put(c, pks);
-//		addColumn(c, f, null);
+		//		ArrayList<Field> pks = settingsPK.get(c);
+		//		if(pks == null){
+		//			pks = new ArrayList<>();
+		//		}
+		//
+		//		pks.add(f);
+		//		settingsPK.put(c, pks);
+		//		addColumn(c, f, null);
 		String attName = f.getName();
 		String attType = convertType(f);
 		Attribute att = new Attribute(attName, attType);
 		table.addPrimaryKey(att);
-		
+
 	}
 
 
 
 	private void addColumn(Class<?> c1, Field f, Class<?> c2){
-		ArrayList<String[]> cols = columns.get(c1);
+		ArrayList<String[]> cols = getColumns(c1);
 
 		if(cols == null){
 			cols = new ArrayList<>();
@@ -245,10 +348,9 @@ public abstract class ModelsManager {
 			columnName = c2.getSimpleName().toLowerCase()+"_"+f.getName();
 		}
 		cols.add(new String[]{columnName, convertType(f)});
-		columns.put(c1, cols);
+		columns.put(c1.getCanonicalName(), cols);
 
 	}
-
 
 	private Class<?> getClassBySimpleName(String simpleName){
 		Class<?> classe= null;
@@ -273,7 +375,7 @@ public abstract class ModelsManager {
 
 
 	private ArrayList<ArrayList<String>> getForeignKeys(Class<?> c) {
-		ArrayList<ArrayList<String>> fks = settingsFK.get(c);
+		ArrayList<ArrayList<String>> fks = settingsFK.get(c.getCanonicalName());
 		if(fks == null){
 			fks = new ArrayList<>();
 		}	
@@ -281,7 +383,7 @@ public abstract class ModelsManager {
 	}
 
 	private StringBuilder getPrimaryKeyString(List<Field> pks){
-		
+
 		StringBuilder sb = new StringBuilder();
 		sb.append("(");
 		for(int i = 0; i<pks.size(); i++){
@@ -327,10 +429,10 @@ public abstract class ModelsManager {
 	}
 
 	public ArrayList<String[]> getColumns(Class<?> c){
-		ArrayList<String[]> cols = columns.get(c);
+		ArrayList<String[]> cols = columns.get(c.getCanonicalName());
 		if(cols == null){
 			cols = new ArrayList<>();
-/*
+			/*
 			for(Field f : c.getDeclaredFields()){
 				Annotation[] an = f.getDeclaredAnnotations();
 				if(an.length > 0){
