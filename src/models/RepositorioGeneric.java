@@ -1,5 +1,7 @@
 package models;
 
-public interface RepositorioGeneric<T> {
+public abstract class RepositorioGeneric<T> {
+	
+	
 
 }
